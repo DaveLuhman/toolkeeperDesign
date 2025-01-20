@@ -4,7 +4,7 @@
       <tr>
         <td>
           <div id="printButton" class="md:mr-3 md:items-start">
-            <label onclick="openInNewTab()"><i class="fa-solid fa-print"></i></label>
+            <i class="fa-solid fa-print"></i>
           </div>
         </td>
         <th>Barcode (Link To Tool)</th>
@@ -13,9 +13,9 @@
         <th>Updated</th>
       </tr>
     </thead>
-    {{#if recentlyUpdatedTools}}
+    {{#if tools}}
       <tbody>
-        {{#each recentlyUpdatedTools}}
+        {{#each tools}}
           <tr>
             <td></td>
             <td id="barcode"><a href="/tool/{{id}}">{{barcode}}</a></td>

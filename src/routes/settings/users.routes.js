@@ -23,11 +23,11 @@ userSettingsRouter.post('/resetPW/:id', resetPassword, renderSettingsUsers)
 
 // @desc disable user
 // @endpoint POST /settings/users/disableUser/:id
-userSettingsRouter.post('/disableUser/:id', disableUser, renderSettingsUsers)
+userSettingsRouter.post('/disableUser/:id', disableUser, getUsers, renderSettingsUsers)
 
 // @desc delete user
 // @endpoint GET /settings/users/:id/delete
-userSettingsRouter.get("/:id/delete", deleteUser, renderSettingsUsers);
+userSettingsRouter.get("/:id/delete", deleteUser, getUsers, renderSettingsUsers);
 
 // @desc create new user
 // @endpoint POST /settings/users/create

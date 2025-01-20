@@ -107,7 +107,7 @@ const getCheckedInTools = async (tenant) => {
 	try {
 		return await Tool.find()
 			.where("serviceAssignment.type")
-			.equals("stockroom")
+			.equals("Stockroom")
 			.where("tenant")
 			.equals(tenant)
 			.where("archived")
@@ -231,14 +231,38 @@ const createTool = async (req, res, next) => {
 			throw new Error("Missing required fields");
 		}
 
-		const existing = await Tool.findOne({
-			$or: [{ serialNumber }, { barcode }, { toolID }],
-			tenant,
-		});
+		// Build query conditions for duplicate checking
+		const queryConditions = [];
+		if (serialNumber) {
+			queryConditions.push({ serialNumber: { $eq: serialNumber }, tenant: { $eq: tenant } });
+		}
+		if (barcode) {
+			queryConditions.push({ barcode: { $eq: barcode }, tenant: { $eq: tenant } });
+		}
+		if (toolID) {
+			queryConditions.push({ toolID: { $eq: toolID }, tenant: { $eq: tenant } });
+		}
 
-		if (existing) {
-			res.locals.tools = mutateToArray(existing);
-			throw new Error("Tool already exists");
+		const existingTools = await Tool.find({ $or: queryConditions });
+
+		if (existingTools.length > 0) {
+			const errorList = existingTools.map((tool) => {
+				if (tool.serialNumber === serialNumber) {
+					return { field: "Serial Number", value: serialNumber, tool };
+				}
+				if (tool.barcode === barcode) {
+					return { field: "Barcode", value: barcode, tool };
+				}
+				return { field: "Tool ID", value: toolID, tool };
+			});
+
+			const error = new Error("Duplicate Tool(s) Found");
+			error.errorList = errorList.map((err) => ({
+				cause: err.field,
+				duplicateValue: err.value,
+				existingTool: err.tool._id,
+			}));
+			throw error;
 		}
 
 		const newTool = await Tool.create({
@@ -292,7 +316,10 @@ const createTool = async (req, res, next) => {
 		});
 
 		res.locals.message = error.message;
-		res.status(500).redirect("back");
+		if (error.errorList) {
+			res.locals.errorList = error.errorList;
+		}
+		return res.render("results");
 	}
 };
 
@@ -616,7 +643,7 @@ export const getRecentlyUpdatedTools = async (req, res, next) => {
 			metadata: { tenant: req.user.tenant, toolCount: tools.length },
 		});
 
-		res.locals.recentlyUpdatedTools = tools;
+		res.locals.tools = tools;
 		return next();
 	} catch (error) {
 		req.logger.error({
